@@ -3,12 +3,17 @@
     "name": "vidtok",
     "slug": "vidtok",
     "extra": {
-      "EXPO_PUBLIC_FIREBASE_API_KEY":"AIzaSyCRvvv7RlGWSV6cHN4UMPTUqodqMcYiKeQ",
-      "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN":"vidtok-b2166.firebaseapp.com",
-      "EXPO_PUBLIC_FIREBASE_PROJECT_ID":"vidtok-b2166",
-      "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET":"vidtok-b2166.firebasestorage.app",
-      "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID":"251822049760",
-      "EXPO_PUBLIC_FIREBASE_APP_ID":"1:251822049760:web:ab82a1257bdd81d8340385"
+      "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCRvvv7RlGWSV6cHN4UMPTUqodqMcYiKeQ",
+      "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "vidtok-b2166.firebaseapp.com",
+      "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "vidtok-b2166",
+      "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "vidtok-b2166.firebasestorage.app",
+      "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "251822049760",
+      "EXPO_PUBLIC_FIREBASE_APP_ID": "1:251822049760:web:ab82a1257bdd81d8340385",
+      "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "861938233278-pd82bv0uu166dlu8r5ipfr84csk6mjne.apps.googleusercontent.com",
+      "router": {},
+      "eas": {
+        "projectId": "77e8e3a3-6013-47b7-915f-f0422b8cde15"
+      }
     },
     "version": "1.0.0",
     "orientation": "portrait",
@@ -34,14 +39,6 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
-        "android.permission.ACCESS_MEDIA_LOCATION",
-        "android.permission.READ_MEDIA_AUDIO",
-        "android.permission.READ_MEDIA_IMAGES",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -93,6 +90,12 @@
         {
           "configureAndroidBackup": true,
           "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
+        }
+      ],
+      [
+        "expo-web-browser",
+        {
+          "experimentalLauncherActivity": true
         }
       ]
     ],

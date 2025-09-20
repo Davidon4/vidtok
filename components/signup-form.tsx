@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import * as yup from "yup";
 import { router } from 'expo-router';
 
-import { Input } from '@/components/ui/input';
+import { Input, PasswordInput } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { Label } from '@/components/ui/label';
@@ -21,9 +21,10 @@ type FormType = yup.InferType<typeof schema>;
 
 export type SignupFormProps = {
   onSubmit?: SubmitHandler<FormType>;
+  onGoogleSignIn?: () => void;
 };
 
-export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
+export const SignupForm = ({ onSubmit = () => {}, onGoogleSignIn = () => {} }: SignupFormProps) => {
     const {
     control,
     handleSubmit,
@@ -36,7 +37,7 @@ export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
     <View className="flex-1 bg-white p-4"> 
 
       {/* Content */}
-      <View className="flex-1 py-8 px-6">
+      <View className="flex-1 justify-center py-8 px-6">
         {/* Title */}
         <Text className="text-2xl font-bold text-gray-900 mb-8">
           Hello! Register to get started
@@ -98,11 +99,10 @@ export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
         render={({ field: { onChange, onBlur, value } }) => (
           <>
           <Label htmlFor='password' nativeID="password" className="text-black py-2">Password</Label>
-        <Input
+        <PasswordInput
       textContentType="password"
       autoComplete="password"
       placeholder="Password"
-      secureTextEntry
       onBlur={onBlur}
       onChangeText={onChange}
       value={value}
@@ -114,7 +114,7 @@ export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
         {errors.password && <Text className="text-red-500">Password must be at least 6 characters.</Text>}
         </View>
 
-    <Button onPress={handleSubmit(onSubmit)} className="mt-6 bg-red-600">
+    <Button onPress={handleSubmit(onSubmit)} className="my-6 bg-red-600">
       {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
       <Text className="text-white">Register</Text>
       )}
@@ -126,15 +126,13 @@ export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
         </Text>
 
         {/* Social Login Buttons */}
-        <View className="flex-row justify-center mb-8">
-          <TouchableOpacity
-            className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"
-            onPress={() => console.log('Google')}
-            activeOpacity={0.7}
-          >
-            <Google width={24} height={24} />
-          </TouchableOpacity>
-        </View>
+         <Button
+      className="flex-row items-center border border-gray-300 bg-white mb-3 gap-1"
+      variant="secondary"
+      onPress={onGoogleSignIn}
+    >
+      <Google width={24} height={24} />
+    </Button>
 
         {/* Login Link */}
         <View className="flex-row justify-center">

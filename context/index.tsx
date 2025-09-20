@@ -10,6 +10,7 @@ import {
   login,
   logout,
   register,
+  signInWithGoogle,
 } from "@/services/firebase-service";
 import { auth } from "@/services/firebase-config";
 
@@ -35,6 +36,11 @@ interface AuthContextType {
     password: string,
     name?: string
   ) => Promise<User | undefined>;
+
+  /**
+   * Signs in with Google
+   */
+  signInWithGoogle: () => Promise<User | undefined>;
 
   /**
    * Logs out the current user and clears session
@@ -150,6 +156,19 @@ export function SessionProvider(props: { children: React.ReactNode }) {
   };
 
   /**
+   * Handles Google sign-in process
+   */
+  const handleGoogleSignIn = async () => {
+    try {
+      const response = await signInWithGoogle();
+      return response?.user;
+    } catch (error) {
+      console.error("[handleGoogleSignIn error] ==>", error);
+      return undefined;
+    }
+  };
+
+  /**
    * Handles user sign-out process
    */
   const handleSignOut = async () => {
@@ -170,6 +189,7 @@ export function SessionProvider(props: { children: React.ReactNode }) {
       value={{
         signIn: handleSignIn,
         signUp: handleSignUp,
+        signInWithGoogle: handleGoogleSignIn,
         signOut: handleSignOut,
         user,
         isLoading,
