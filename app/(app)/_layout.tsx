@@ -4,9 +4,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import {House, SquarePlus} from 'lucide-react-native';
 import { NAV_THEME, spacing } from '@/lib/theme';
+import { useSession } from '@/context';
 
 export default function TabLayout() {
   const { bottom } = useSafeAreaInsets();
+  const { user, isLoading } = useSession();
   const hideSplash = useCallback(async () => {
     await SplashScreen.hideAsync();
   }, []);
@@ -17,6 +19,16 @@ export default function TabLayout() {
       hideSplash();
     }, 1000);
   }, [hideSplash]);
+
+  // If still loading, show nothing (or loading screen)
+  if (isLoading) {
+    return null;
+  }
+
+  // If no user, redirect to onboarding
+  if (!user) {
+    return <Redirect href="/onboarding" />;
+  }
   
   return (
     <Tabs

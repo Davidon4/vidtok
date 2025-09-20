@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert } from 'react-native';
 
 import { SignupForm, type SignupFormProps } from '@/components/signup-form';
 import { FocusAwareStatusBar } from '@/components/ui/focus-aware-status-bar';
 import { useSession } from '@/context';
+import { showMessage } from "react-native-flash-message";
 
 export default function Signup() {
   const router = useRouter();
@@ -17,13 +17,19 @@ export default function Signup() {
       
       if (user) {
         console.log('User created successfully, navigating to app...');
-        Alert.alert('Success', 'Account created successfully!');
+        showMessage({
+          message: "Success",
+          description: "Account created successfully!",
+          type: "success",
+        });
         router.replace('/(app)');
-        console.log('Navigation command sent');
       }
     } catch (error) {
-      console.error('Signup error:', error);
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+      showMessage({
+        message: "Error",
+        description: "Failed to create account. Please try again.",
+        type: "danger",
+      });
     }
   };
 

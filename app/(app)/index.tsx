@@ -49,11 +49,6 @@ function VideoItem({ video, isActive, videoHeight }: { video: any; isActive: boo
   // Use the video metadata to determine content fit
   const contentFit = video.isLandscape ? "contain" : "cover";
   
-  console.log('VideoItem - contentFit:', contentFit);
-  console.log('VideoItem - isLandscape:', video.isLandscape);
-  console.log('VideoItem - videoHeight:', videoHeight);
-  console.log('VideoItem - width:', width);
-
   // Auto pause/play when visibility changes
   React.useEffect(() => {
     if (isActive) {

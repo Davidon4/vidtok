@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Pressable } from 'react-native';
+import { View, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import * as yup from "yup";
 import { router } from 'expo-router';
-import {SafeAreaView} from "react-native-safe-area-context"
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,7 @@ export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
     const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(schema)
   })
@@ -116,7 +115,9 @@ export const SignupForm = ({ onSubmit = () => {} }: SignupFormProps) => {
         </View>
 
     <Button onPress={handleSubmit(onSubmit)} className="mt-6 bg-red-600">
+      {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
       <Text className="text-white">Register</Text>
+      )}
     </Button>
 
         {/* Divider */}

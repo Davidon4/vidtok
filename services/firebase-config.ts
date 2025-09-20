@@ -4,9 +4,19 @@
  * @module
  */
 import { initializeApp } from "firebase/app";
+import Constants from 'expo-constants';
 
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const {
+  EXPO_PUBLIC_FIREBASE_API_KEY,
+  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  EXPO_PUBLIC_FIREBASE_APP_ID,
+  } = Constants.expoConfig?.extra || {}
 
 /**
  * Firebase configuration object containing necessary credentials and endpoints
@@ -19,18 +29,12 @@ const firebaseConfig: {
   messagingSenderId: string | undefined;
   appId: string | undefined;
 } = {
-// EXPO_PUBLIC_FIREBASE_API_KEY=AIzaSyCRvvv7RlGWSV6cHN4UMPTUqodqMcYiKeQ
-// EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=vidtok-b2166.firebaseapp.com
-// EXPO_PUBLIC_FIREBASE_PROJECT_ID=vidtok-b2166
-// EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=vidtok-b2166.firebasestorage.app
-// EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=251822049760
-// EXPO_PUBLIC_FIREBASE_APP_ID=1:251822049760:web:ab82a1257bdd81d8340385
-  apiKey: "AIzaSyCRvvv7RlGWSV6cHN4UMPTUqodqMcYiKeQ",
-  authDomain: "vidtok-b2166.firebaseapp.com",
-  projectId: "vidtok-b2166",
-  storageBucket: "vidtok-b2166.firebasestorage.app",
-  messagingSenderId: "251822049760",
-  appId: "1:251822049760:web:ab82a1257bdd81d8340385",
+  apiKey: EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: EXPO_PUBLIC_FIREBASE_APP_ID
 };
 
 /**

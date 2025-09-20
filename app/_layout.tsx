@@ -11,6 +11,7 @@ import { useColorScheme } from 'nativewind';
 import { SessionProvider } from '@/context';
 import { AverageSans_400Regular } from "@expo-google-fonts/average-sans/400Regular";
 export {ErrorBoundary} from 'expo-router';
+import FlashMessage from 'react-native-flash-message';
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
@@ -64,6 +65,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="+not-found" />
             </Stack>
+            <FlashMessage position="top" />
       <PortalHost />
     </ThemeProvider>
     </SessionProvider>
