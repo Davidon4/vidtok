@@ -18,6 +18,50 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { auth } from './firebase-config';
 import Constants from 'expo-constants';
+import { 
+  uploadVideoToCloudinary, 
+  deleteVideoFromCloudinary, 
+  getVideoThumbnailUrl, 
+  getOptimizedVideoUrl,
+  getVideoInfo,
+  getVideoPosterUrl,
+  getResponsiveVideoUrl
+} from './cloudinary-service';
+import { 
+  saveVideoMetadata, 
+  getVideos, 
+  getUserVideos, 
+  updateVideoMetadata, 
+  deleteVideoMetadata,
+  likeVideo,
+  incrementVideoViews,
+  VideoMetadata 
+} from './firestore-service';
+import { getVideoDimensionsFromUri, calculateAspectRatio, isLandscapeVideo } from '../utils/video-utils';
+import { 
+  VideoUploadParams,
+  VideoSaveParams,
+  VideoQueryParams,
+  VideoSearchParams,
+  VideoUpdateParams,
+  VideoDeleteParams,
+  VideoLikeParams,
+  VideoViewIncrementParams,
+  FileUploadParams,
+  FileDeleteParams,
+  FileUrlParams,
+  VideoUploadFunction,
+  VideoSaveFunction,
+  VideoListFunction,
+  VideoUserListFunction,
+  VideoUpdateFunction,
+  VideoDeleteFunction,
+  VideoLikeFunction,
+  VideoViewIncrementFunction,
+  FileUploadFunction,
+  FileDeleteFunction,
+  FileUrlFunction
+} from '../types';
 
 const {
   EXPO_PUBLIC_GOOGLE_CLIENT_ID,
@@ -170,3 +214,203 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
     throw e;
   }
 }
+
+// ============================================================================
+// Storage Services
+// ============================================================================
+
+/**
+ * Upload a video file to Cloudinary
+ */
+export const uploadUserVideo: VideoUploadFunction = async (params: VideoUploadParams): Promise<string> => {
+  try {
+    const result = await uploadVideoToCloudinary(params.videoUri, {
+      folder: `videos/${params.userId}`,
+      publicId: params.filename?.replace(/\.[^/.]+$/, '') || `video_${Date.now()}`,
+    });
+    return result.secureUrl;
+  } catch (error) {
+    console.error("[error uploading video] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Get optimized video URL from Cloudinary
+ */
+export const getUserFileURL: FileUrlFunction = async (params: FileUrlParams): Promise<string> => {
+  try {
+    // Extract public ID from Cloudinary URL
+    const videoInfo = getVideoInfo(params.filePath);
+    
+    if (!videoInfo) {
+      throw new Error('Invalid Cloudinary URL');
+    }
+    
+    return getOptimizedVideoUrl(videoInfo.publicId);
+  } catch (error) {
+    console.error("[error getting file URL] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Get video thumbnail URL from Cloudinary
+ */
+export const getVideoThumbnail = async (videoUrl: string, options?: {
+  width?: number;
+  height?: number;
+  time?: number;
+}): Promise<string> => {
+  try {
+    const videoInfo = getVideoInfo(videoUrl);
+    
+    if (!videoInfo) {
+      throw new Error('Invalid Cloudinary URL');
+    }
+    
+    return getVideoPosterUrl(videoInfo.publicId, options);
+  } catch (error) {
+    console.error("[error getting video thumbnail] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Get responsive video URL based on screen size
+ */
+export const getResponsiveVideo = async (videoUrl: string, screenWidth: number): Promise<string> => {
+  try {
+    const videoInfo = getVideoInfo(videoUrl);
+    
+    if (!videoInfo) {
+      throw new Error('Invalid Cloudinary URL');
+    }
+    
+    return getResponsiveVideoUrl(videoInfo.publicId, screenWidth);
+  } catch (error) {
+    console.error("[error getting responsive video] ==>", error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// Firestore Services
+// ============================================================================
+
+/**
+ * Save video metadata to Firestore
+ */
+export const saveVideo: VideoSaveFunction = async (params: VideoSaveParams): Promise<string> => {
+  try {
+    // Calculate aspect ratio and orientation if dimensions are provided
+    let aspectRatio: number | undefined;
+    let isLandscape: boolean | undefined;
+    let { width, height } = params;
+    
+    if (width && height) {
+      aspectRatio = calculateAspectRatio(width, height);
+      isLandscape = isLandscapeVideo(aspectRatio);
+    } else {
+      // Try to get dimensions from video URL
+      try {
+        const dimensions = await getVideoDimensionsFromUri(params.videoUrl);
+        aspectRatio = dimensions.aspectRatio;
+        isLandscape = dimensions.isLandscape;
+        width = dimensions.width;
+        height = dimensions.height;
+      } catch (error) {
+        console.warn("Could not get video dimensions:", error);
+      }
+    }
+
+    return await saveVideoMetadata({
+      videoUrl: params.videoUrl,
+      posterName: params.posterName,
+      userId: params.userId,
+      thumbnailUrl: params.thumbnailUrl,
+      duration: params.duration,
+      width,
+      height,
+      aspectRatio,
+      isLandscape,
+    });
+  } catch (error) {
+    console.error("[error saving video] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Get all videos with pagination
+ */
+export const getAllVideos: VideoListFunction = async (params?: VideoQueryParams): Promise<VideoMetadata[]> => {
+  try {
+    const pageSize = params?.pageSize || 10;
+    const lastDoc = params?.lastDoc;
+    return await getVideos({ pageSize, lastDoc });
+  } catch (error) {
+    console.error("[error getting videos] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Get videos by user ID
+ */
+export const getUserVideoList: VideoUserListFunction = async (userId: string): Promise<VideoMetadata[]> => {
+  try {
+    return await getUserVideos(userId);
+  } catch (error) {
+    console.error("[error getting user videos] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Update video metadata
+ */
+export const updateVideo: VideoUpdateFunction = async (params: VideoUpdateParams): Promise<void> => {
+  try {
+    await updateVideoMetadata({ videoId: params.videoId, updates: params.updates });
+  } catch (error) {
+    console.error("[error updating video] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete video
+ */
+export const deleteVideo: VideoDeleteFunction = async (params: VideoDeleteParams): Promise<void> => {
+  try {
+    await deleteVideoMetadata({ videoId: params.videoId });
+  } catch (error) {
+    console.error("[error deleting video] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Like a video
+ */
+export const likeUserVideo: VideoLikeFunction = async (params: VideoLikeParams): Promise<void> => {
+  try {
+    await likeVideo({ videoId: params.videoId, userId: params.userId });
+  } catch (error) {
+    console.error("[error liking video] ==>", error);
+    throw error;
+  }
+};
+
+/**
+ * Increment video views
+ */
+export const incrementViews: VideoViewIncrementFunction = async (params: VideoViewIncrementParams): Promise<void> => {
+  try {
+    await incrementVideoViews({ videoId: params.videoId });
+  } catch (error) {
+    console.error("[error incrementing views] ==>", error);
+    throw error;
+  }
+};

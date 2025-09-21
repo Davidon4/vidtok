@@ -10,6 +10,9 @@
       "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "251822049760",
       "EXPO_PUBLIC_FIREBASE_APP_ID": "1:251822049760:web:ab82a1257bdd81d8340385",
       "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "861938233278-pd82bv0uu166dlu8r5ipfr84csk6mjne.apps.googleusercontent.com",
+      "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dgfdftowm",
+      "EXPO_PUBLIC_CLOUDINARY_API_KEY": "851154316581813",
+      "EXPO_PUBLIC_CLOUDINARY_API_SECRET": "XivsFUp0z8Mqq6QwmvgEyBJeDBc",
       "router": {},
       "eas": {
         "projectId": "77e8e3a3-6013-47b7-915f-f0422b8cde15"

@@ -4,6 +4,8 @@
  * @module
  */
 import { initializeApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 import Constants from 'expo-constants';
 
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
@@ -49,5 +51,15 @@ const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
 
-export { auth };
+/**
+ * Initialize Firebase Storage service
+ */
+const storage = getStorage(app);
+
+/**
+ * Initialize Firebase Firestore service
+ */
+const db = getFirestore(app);
+
+export { auth, storage, db };
 export default app;

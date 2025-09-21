@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Link, Redirect, SplashScreen, Tabs } from 'expo-router';
+import { Redirect, SplashScreen, Tabs } from 'expo-router';
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import {House, SquarePlus} from 'lucide-react-native';

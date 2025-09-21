@@ -13,7 +13,7 @@ export default function Signin() {
   const onSubmit: SigninFormProps['onSubmit'] = async (data) => {
     try {
       console.log('Signin data:', data);
-      const user = await signIn(data.email, data.password);
+      const user = await signIn({ email: data.email, password: data.password });
       
       if (user) {
         console.log('User signed in successfully, showing success message...');

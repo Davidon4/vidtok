@@ -11,7 +11,36 @@ import {
   logout,
   register,
   signInWithGoogle,
+  uploadUserVideo,
+  getUserFileURL,
+  getVideoThumbnail,
+  getResponsiveVideo,
+  saveVideo,
+  getAllVideos,
+  getUserVideoList,
+  updateVideo,
+  deleteVideo,
+  likeUserVideo,
+  incrementViews,
 } from "@/services/firebase-service";
+import { 
+  SessionContext,
+  VideoUploadParams,
+  VideoSaveParams,
+  VideoQueryParams,
+  VideoSearchParams,
+  VideoUpdateParams,
+  VideoDeleteParams,
+  VideoLikeParams,
+  VideoViewIncrementParams,
+  FileUploadParams,
+  FileDeleteParams,
+  FileUrlParams,
+  SignInParams,
+  SignUpParams,
+  GoogleSignInParams,
+  VideoMetadata
+} from "@/types";
 import { auth } from "@/services/firebase-config";
 
 // ============================================================================
@@ -23,34 +52,23 @@ import { auth } from "@/services/firebase-config";
  * for managing user authentication throughout the application.
  */
 interface AuthContextType {
-  /**
-   * Authenticates an existing user with their credentials
-   */
-  signIn: (email: string, password: string) => Promise<User | undefined>;
-
-  /**
-   * Creates and authenticates a new user account
-   */
-  signUp: (
-    email: string,
-    password: string,
-    name?: string
-  ) => Promise<User | undefined>;
-
-  /**
-   * Signs in with Google
-   */
-  signInWithGoogle: () => Promise<User | undefined>;
-
-  /**
-   * Logs out the current user and clears session
-   */
-  signOut: () => void;
-
-  /** Currently authenticated user */
   user: User | null;
-  /** Loading state for authentication operations */
   isLoading: boolean;
+  signIn: (params: SignInParams) => Promise<User | undefined>;
+  signUp: (params: SignUpParams) => Promise<User | undefined>;
+  signInWithGoogle: (params?: GoogleSignInParams) => Promise<User | undefined>;
+  signOut: () => void;
+  uploadVideo: (params: VideoUploadParams) => Promise<string>;
+  getFileURL: (params: FileUrlParams) => Promise<string>;
+  getVideoThumbnail: (videoUrl: string, options?: { width?: number; height?: number; time?: number }) => Promise<string>;
+  getResponsiveVideo: (videoUrl: string, screenWidth: number) => Promise<string>;
+  saveVideo: (params: VideoSaveParams) => Promise<string>;
+  getAllVideos: (params?: VideoQueryParams) => Promise<VideoMetadata[]>;
+  getUserVideoList: (userId: string) => Promise<VideoMetadata[]>;
+  updateVideo: (params: VideoUpdateParams) => Promise<void>;
+  deleteVideo: (params: VideoDeleteParams) => Promise<void>;
+  likeVideo: (params: VideoLikeParams) => Promise<void>;
+  incrementViews: (params: VideoViewIncrementParams) => Promise<void>;
 }
 
 // ============================================================================
@@ -128,9 +146,9 @@ export function SessionProvider(props: { children: React.ReactNode }) {
   /**
    * Handles user sign-in process
    */
-  const handleSignIn = async (email: string, password: string) => {
+  const handleSignIn = async (params: SignInParams) => {
     try {
-      const response = await login(email, password);
+      const response = await login(params.email, params.password);
       return response?.user;
     } catch (error) {
       console.error("[handleSignIn error] ==>", error);
@@ -141,13 +159,9 @@ export function SessionProvider(props: { children: React.ReactNode }) {
   /**
    * Handles new user registration process
    */
-  const handleSignUp = async (
-    email: string,
-    password: string,
-    name?: string
-  ) => {
+  const handleSignUp = async (params: SignUpParams) => {
     try {
-      const response = await register(email, password, name);
+      const response = await register(params.email, params.password, params.name);
       return response?.user;
     } catch (error) {
       console.error("[handleSignUp error] ==>", error);
@@ -158,7 +172,7 @@ export function SessionProvider(props: { children: React.ReactNode }) {
   /**
    * Handles Google sign-in process
    */
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = async (params?: GoogleSignInParams) => {
     try {
       const response = await signInWithGoogle();
       return response?.user;
@@ -191,6 +205,17 @@ export function SessionProvider(props: { children: React.ReactNode }) {
         signUp: handleSignUp,
         signInWithGoogle: handleGoogleSignIn,
         signOut: handleSignOut,
+        uploadVideo: uploadUserVideo,
+        getFileURL: getUserFileURL,
+        getVideoThumbnail,
+        getResponsiveVideo,
+        saveVideo,
+        getAllVideos,
+        getUserVideoList,
+        updateVideo,
+        deleteVideo,
+        likeVideo: likeUserVideo,
+        incrementViews,
         user,
         isLoading,
       }}

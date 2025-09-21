@@ -13,7 +13,7 @@ export default function Signup() {
   const onSubmit: SignupFormProps['onSubmit'] = async (data) => {
     try {
       console.log('Signup data:', data);
-      const user = await signUp(data.email, data.password, data.name);
+      const user = await signUp({ email: data.email, password: data.password, name: data.name });
       
       if (user) {
         console.log('User created successfully, showing success message...');
