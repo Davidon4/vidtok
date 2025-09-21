@@ -24,6 +24,7 @@ function VideoItem({ video, isActive, videoHeight, likeVideo, currentUserId }: {
   // Add refs to maintain video instances
   const player = useVideoPlayer(video.videoUrl || video.url, p => {
     p.loop = true;
+    p.muted = false; // Enable audio for home screen videos
     if (isActive) {
       p.play();
     }

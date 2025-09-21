@@ -29,7 +29,7 @@ export default function Add() {
   // Create video player at top level
   const player = useVideoPlayer(videoUri || '', (player) => {
     player.loop = true;
-    player.muted = true;
+    player.muted = false; // Enable audio for video preview
   });
 
   // Timer effect
@@ -113,6 +113,7 @@ export default function Add() {
         message: "Success",
         description: "Video uploaded successfully!",
         type: "success",
+        duration: 3000, // Show for 3 seconds to match navigation delay
       });
 
       // Reset form
@@ -149,6 +150,7 @@ export default function Add() {
         message: "Error",
         description: "Failed to upload video. Please try again.",
         type: "danger",
+        duration: 4000, // Show for 4 seconds so user can read the error
       });
     } finally {
       setIsUploading(false);
