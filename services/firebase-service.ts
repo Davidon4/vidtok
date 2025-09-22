@@ -121,8 +121,6 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
   try {
     // Use the Expo proxy URL that Google accepts
     const redirectUri = 'https://auth.expo.io/@king_juggernaut-2/vidtok';
-    
-    console.log('Using redirect URI:', redirectUri);
 
     const request = new AuthSession.AuthRequest({
       clientId: EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
@@ -138,8 +136,6 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
     });
 
     if (result.type === 'success') {
-      console.log('Authorization successful, exchanging code for token...');
-      console.log('Code:', result.params.code);
       
       const tokenResponse = await AuthSession.exchangeCodeAsync(
         {
@@ -152,8 +148,6 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
           tokenEndpoint: 'https://oauth2.googleapis.com/token',
         }
       );
-
-      console.log('Token response received:', !!tokenResponse.idToken);
       
       // Create a Google credential with the ID token
       const googleCredential = GoogleAuthProvider.credential(tokenResponse.idToken);
@@ -161,10 +155,8 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
       // Sign-in the user with the credential
       const userCredential = await signInWithCredential(auth, googleCredential);
       
-      console.log('Firebase sign-in successful');
       return { user: userCredential.user };
     } else {
-      console.log('Authorization failed:', result.type);
       throw new Error('Google sign-in was cancelled or failed');
     }
   } catch (e) {

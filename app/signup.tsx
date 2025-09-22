@@ -26,17 +26,14 @@ export default function Signup() {
 
   const handleGoogleSignIn = async () => {
     try {
-      console.log('Starting Google sign-in...');
       const user = await signInWithGoogle();
       
       if (user) {
-        console.log('Google sign-in successful, showing success message...');
        notify.success("Signed in with Google successfully!", {
         onHide: () => router.replace('/(app)'),
        });
       }
     } catch (error) {
-      console.error('Google sign-in error:', error);
      notify.error("Failed to sign in with Google. Please try again.");
     }
   };
