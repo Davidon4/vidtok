@@ -29,16 +29,42 @@ export default function Add() {
   const { user, uploadVideo, saveVideo } = useSession();
   const router = useRouter();
 
-  // Create video player with useMemo to avoid recreation on every render
-  const player = useMemo(() => {
-    if (!videoUri) return null;
-    return useVideoPlayer(videoUri, (p) => {
-      p.loop = true;
-      p.muted = false; // Enable audio for video preview
-    });
-  }, [videoUri]);
+  // Create video player at top level
+  const player = useVideoPlayer(videoUri || '', (p) => {
+    p.loop = true;
+    p.muted = false;
+  });
 
-  // Player cleanup
+  // Update player source when videoUri changes
+  useEffect(() => {
+    if (videoUri && player) {
+      player.replaceAsync(videoUri).catch((error) => {
+        console.log('Error replacing video source:', error);
+      });
+    }
+  }, [videoUri, player]);
+
+  // Player cleanup with better validation
+  useEffect(() => {
+    return () => {
+      try {
+        if (player && typeof player.pause === 'function') {
+          setTimeout(() => {
+            try {
+              if (player && typeof player.pause === 'function') {
+                player.pause();
+              }
+            } catch (error) {
+            
+            }
+          }, 100);
+        }
+      } catch (error) {
+      }
+    };
+  }, [player]);
+
+  // Cleanup on component unmount
   useEffect(() => {
     return () => {
       try {
@@ -46,14 +72,14 @@ export default function Add() {
           player.pause();
         }
       } catch (error) {
-        console.log('Player cleanup error (safe to ignore):', error);
+        
       }
     };
-  }, [player]);
+  }, []);
 
-  // Listen to playback status changes instead of manual tracking
+  // Listen to playback status changes
   useEffect(() => {
-    if (!player) return;
+    if (!player || !videoUri) return;
 
     const handlePlaybackStatusUpdate = (status: any) => {
       setIsPlaying(status.isPlaying || false);
@@ -62,9 +88,13 @@ export default function Add() {
     player.addListener('statusChange', handlePlaybackStatusUpdate);
     
     return () => {
-      player.removeListener('statusChange', handlePlaybackStatusUpdate);
+      try {
+        player.removeListener('statusChange', handlePlaybackStatusUpdate);
+      } catch (error) {
+        console.log('Error removing listener:', error);
+      }
     };
-  }, [player]);
+  }, [player, videoUri]);
 
   // Timer effect
   useEffect(() => {
@@ -189,24 +219,38 @@ export default function Add() {
   };
 
   const clearVideo = () => {
+    // Pause player before clearing
+    try {
+      if (player && typeof player.pause === 'function') {
+        player.pause();
+      }
+    } catch (error) {
+      // Ignore errors during cleanup
+    }
+    
     setVideoUri(null);
     setIsPlaying(false);
     setRecordingTime(0);
   };
 
   const togglePlayPause = () => {
-    if (!player) return;
+    if (!player || !videoUri) return;
     
-    if (isPlaying) {
-      player.pause();
-    } else {
-      player.play();
+    try {
+      if (isPlaying) {
+        player.pause();
+        setIsPlaying(false); // Fallback manual update
+      } else {
+        player.play();
+        setIsPlaying(true); // Fallback manual update
+      }
+    } catch (error) {
+      console.log('Play/pause error:', error);
     }
-    // isPlaying will be updated automatically via playbackStatusUpdate listener
   };
 
   const renderVideoPreview = () => {
-    if (!videoUri || !player) {
+    if (!videoUri) {
       return null;
     }
 
