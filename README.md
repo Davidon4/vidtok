@@ -155,7 +155,8 @@ src/
 
 A link to download the app apk:
 
-https://expo.dev/accounts/king_juggernaut-2/projects/vidtok/builds/19565567-31c5-487c-bc01-69288014327b
+https://expo.dev/accounts/king_juggernaut-2/projects/vidtok/builds/c47c9f29-a0bb-4280-b6b7-f8bf78248cf7
+
 
 ## 🤔 Assumptions & Challenges
 
