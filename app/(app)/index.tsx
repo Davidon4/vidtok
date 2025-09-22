@@ -69,11 +69,13 @@ const VideoItem = React.memo(({ video, isActive, videoHeight, likeVideo, current
     return () => {
       try {
         if (player && typeof player.pause === 'function') {
+          // Check if player is still valid before calling pause
           player.pause();
         }
       } catch (error) {
-        // Player might already be destroyed, ignore the error
-        console.log('Player cleanup error (safe to ignore):', error);
+        if (__DEV__) {
+          console.log('Player cleanup error (safe to ignore):', error);
+        }
       }
     };
   }, [player]);
@@ -110,7 +112,6 @@ const VideoItem = React.memo(({ video, isActive, videoHeight, likeVideo, current
         }}
         contentFit={contentFit}
         nativeControls={false}
-        allowsFullscreen={false}
         allowsPictureInPicture={false}
       />
       <PostOverlay
