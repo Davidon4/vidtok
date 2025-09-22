@@ -13,7 +13,7 @@
       },
       "distribution": "internal"
     },
-    "dev-update": {
+    "new-update": {
       "developmentClient": true,
       "android": {
         "buildType": "apk"
