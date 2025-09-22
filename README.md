@@ -103,15 +103,22 @@ src/
 │   │   ├── index.tsx      # Home feed (optimized video list)
 │   │   ├── add.tsx        # Video recording screen
 │   │   └── _layout.tsx    # App layout
-│   ├── signin.tsx         # Authentication screens
+│   ├── onboarding.tsx         # Authentication screens
+│   └── signup.tsx
 │   └── signup.tsx
 ├── components/             # Reusable components
 │   ├── post-overlay.tsx   # Video overlay with interactions
 │   ├── shimmer-skeleton.tsx # Loading animations
 │   └── ui/                # Base UI components
 ├── services/              # API and external services
-│   ├── firebase-service.ts # Firebase integration
+│   ├── firebase-config.ts # Firebase configuration
+│   ├── firebase-service.ts # Firebase authentication
+│   ├── firestore-service.ts # Firestore database operations
 │   └── cloudinary-service.ts # Video upload service
+├── lib/                    # Shared utilities and themes
+│   ├── icons/              # Icon components
+│   ├── theme/              # Design system (colors, spacing)
+│   └── utils.ts            # Shared utility functions
 ├── context/               # React Context providers
 ├── types/                 # TypeScript definitions
 └── utils/                 # Utility functions
