@@ -73,7 +73,6 @@ export const uploadVideoToCloudinary = async (
 };
 
 
-
 /**
  * Get video info from Cloudinary URL
  */
@@ -116,24 +115,3 @@ export const getVideoPosterUrl = (publicId: string, options?: {
   return `${CLOUDINARY_URL}/video/upload/${transformationString}/${publicId}`;
 };
 
-/**
- * Generate responsive video URL for different screen sizes
- */
-export const getResponsiveVideoUrl = (publicId: string, screenWidth: number): string => {
-  let width = 480;
-  if (screenWidth >= 1024) {
-    width = 1280;
-  } else if (screenWidth >= 768) {
-    width = 720;
-  }
-  
-  const transformations = [
-    `w_${width}`,
-    'c_scale',
-    'q_auto',
-    'f_mp4'
-  ];
-  
-  const transformationString = transformations.join(',');
-  return `${CLOUDINARY_URL}/video/upload/${transformationString}/${publicId}`;
-};

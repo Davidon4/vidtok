@@ -10,8 +10,6 @@ import {
   register,
   signInWithGoogle,
   uploadUserVideo,
-  getVideoThumbnail,
-  getResponsiveVideo,
   saveVideo,
   getAllVideos,
   likeUserVideo,
@@ -43,8 +41,6 @@ interface SessionContextType {
   signUp: (params: SignUpParams) => Promise<User | undefined>;
   signInWithGoogle: (params?: GoogleSignInParams) => Promise<User | undefined>;
   uploadVideo: (params: VideoUploadParams) => Promise<string>;
-  getVideoThumbnail: (videoUrl: string, options?: { width?: number; height?: number; time?: number }) => Promise<string>;
-  getResponsiveVideo: (videoUrl: string, screenWidth: number) => Promise<string>;
   saveVideo: (params: VideoSaveParams) => Promise<string>;
   getAllVideos: (params?: VideoQueryParams) => Promise<VideoMetadata[]>;
   likeVideo: (params: VideoLikeParams) => Promise<void>;
@@ -166,8 +162,6 @@ useEffect(() => {
         signUp: handleSignUp,
         signInWithGoogle: handleGoogleSignIn,
         uploadVideo: uploadUserVideo,
-        getVideoThumbnail,
-        getResponsiveVideo,
         saveVideo,
         getAllVideos,
         likeVideo: likeUserVideo,

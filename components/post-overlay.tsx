@@ -1,16 +1,17 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { Heart } from "lucide-react-native";
+import Animated, { useSharedValue, withSpring, useAnimatedStyle } from 'react-native-reanimated';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PostOverlayProps } from '@/types';
 
 // Function to calculate relative time
 const getRelativeTime = (timestamp: Date | string | any | undefined): string => {
   if (!timestamp) return 'now';
-  
+ 
   const now = new Date();
   let postTime: Date;
-  
+ 
   // Handle Firestore Timestamp objects
   if (timestamp && typeof timestamp === 'object' && timestamp.toDate) {
     postTime = timestamp.toDate();
@@ -20,9 +21,9 @@ const getRelativeTime = (timestamp: Date | string | any | undefined): string => 
   } else {
     postTime = new Date(timestamp);
   }
-  
+ 
   const diffInSeconds = Math.floor((now.getTime() - postTime.getTime()) / 1000);
-  
+ 
   if (diffInSeconds < 60) {
     return 'now';
   } else if (diffInSeconds < 3600) {
@@ -37,84 +38,59 @@ const getRelativeTime = (timestamp: Date | string | any | undefined): string => 
   }
 };
 
+// Animated Like Button Component
+function LikeButton({ isLiked, onLikePress }: { isLiked: boolean; onLikePress?: () => void }) {
+  const scale = useSharedValue(1);
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = () => {
+    scale.value = 1.4;
+    scale.value = withSpring(1, { damping: 4, stiffness: 200 });
+    onLikePress?.();
+  };
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity onPress={handlePress} className="pb-1">
+        <Heart
+          size={30}
+          color={isLiked ? "#dc2626" : "#ffffff"}
+          fill={isLiked ? "#dc2626" : "none"}
+        />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export function PostOverlay({ posterName, onLikePress, isLiked = false, timestamp, likes = 0 }: PostOverlayProps) {
   return (
-    <View style={styles.container}>
+    <View className="absolute bottom-0 z-[999] w-full flex-row items-end justify-between pl-5 pr-2.5 pb-25">
       {/* Left side user info */}
-      <View style={styles.userInfo}>
+      <View className="flex-1 flex-row gap-1.5">
         <Avatar alt="Zach Nugent's Avatar">
           <AvatarImage source={{ uri: 'https://github.com/mrzachnugent.png' }} />
           <AvatarFallback>
             <Text>ZN</Text>
           </AvatarFallback>
         </Avatar>
-        <View style={styles.userDetails}>
-          <Text style={styles.username}>
+        <View className="ml-3">
+          <Text className="text-white font-bold text-base">
             {posterName}
           </Text>
-          <Text style={styles.timestamp}>
+          <Text className="text-white text-sm opacity-80">
             {getRelativeTime(timestamp) || 'now'}
           </Text>
         </View>
       </View>
      
       {/* Right side icons */}
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={onLikePress} style={styles.likeButton}>
-          <Heart
-            size={30}
-            color={isLiked ? "#dc2626" : "#ffffff"}
-            fill={isLiked ? "#dc2626" : "none"}
-          />
-        </TouchableOpacity>
-        <Text style={styles.likeCount}>{likes}</Text>
+      <View className="items-center">
+        <LikeButton isLiked={isLiked} onLikePress={onLikePress} />
+        <Text className="font-normal text-sm text-white">{likes}</Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    zIndex: 999,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingLeft: 20,
-    paddingRight: 10,
-    paddingBottom: 100,
-  },
-  userInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 5,
-  },
-  userDetails: {
-    marginLeft: 12,
-  },
-  username: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  timestamp: {
-    color: 'white',
-    fontSize: 14,
-    opacity: 0.8,
-  },
-  actions: {
-    alignItems: 'center',
-  },
-  likeButton: {
-    paddingBottom: 4,
-  },
-  likeCount: {
-    fontWeight: 'normal',
-    fontSize: 14,
-    color: 'white',
-  },
-});

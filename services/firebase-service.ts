@@ -18,9 +18,7 @@ import { auth } from './firebase-config';
 import Constants from 'expo-constants';
 import { 
   uploadVideoToCloudinary, 
-  getVideoInfo,
-  getVideoPosterUrl,
-  getResponsiveVideoUrl
+  getVideoInfo
 } from './cloudinary-service';
 import { 
   saveVideoMetadata, 
@@ -185,45 +183,7 @@ export const uploadUserVideo: VideoUploadFunction = async (params: VideoUploadPa
   }
 };
 
-/**
- * Get video thumbnail URL from Cloudinary
- */
-export const getVideoThumbnail = async (videoUrl: string, options?: {
-  width?: number;
-  height?: number;
-  time?: number;
-}): Promise<string> => {
-  try {
-    const videoInfo = getVideoInfo(videoUrl);
-    
-    if (!videoInfo) {
-      throw new Error('Invalid Cloudinary URL');
-    }
-    
-    return getVideoPosterUrl(videoInfo.publicId, options);
-  } catch (error) {
-    console.error("error getting video thumbnail =>", error);
-    throw error;
-  }
-};
 
-/**
- * Get responsive video URL based on screen size
- */
-export const getResponsiveVideo = async (videoUrl: string, screenWidth: number): Promise<string> => {
-  try {
-    const videoInfo = getVideoInfo(videoUrl);
-    
-    if (!videoInfo) {
-      throw new Error('Invalid Cloudinary URL');
-    }
-    
-    return getResponsiveVideoUrl(videoInfo.publicId, screenWidth);
-  } catch (error) {
-    console.error("error getting responsive video =>", error);
-    throw error;
-  }
-};
 
 // ============================================================================
 // Firestore Services

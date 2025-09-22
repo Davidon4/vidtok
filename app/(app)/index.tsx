@@ -1,18 +1,21 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, Dimensions, FlatList, Text, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Dimensions, FlatList} from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { PostOverlay } from '@/components/post-overlay';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from '@react-navigation/native';
+
+import {ShimmerSkeleton} from "@/components/shimmer-skeleton";
+import { PostOverlay } from '@/components/post-overlay';
 import { useSession } from '@/context';
+import {Text} from "@/components/ui/text";
 import { VideoMetadata } from '@/types';
 
 const { height: screenHeight, width } = Dimensions.get('window');
 
-
-function VideoItem({ video, isActive, videoHeight, likeVideo, currentUserId }: { video: VideoMetadata | any; isActive: boolean; videoHeight: number; likeVideo: (params: { videoId: string; userId: string }) => Promise<void>; currentUserId: string | null }) {
+const VideoItem = React.memo(({ video, isActive, videoHeight, likeVideo, currentUserId, shouldPreload }: { video: VideoMetadata | any; isActive: boolean; videoHeight: number; likeVideo: (params: { videoId: string; userId: string }) => Promise<void>; currentUserId: string | null; shouldPreload?: boolean }) => {
   const [isLiked, setIsLiked] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(video.likes || 0);
+  const [isPlayerReady, setIsPlayerReady] = React.useState(false);
   
   // Check if current user has already liked this video
   React.useEffect(() => {
@@ -21,51 +24,79 @@ function VideoItem({ video, isActive, videoHeight, likeVideo, currentUserId }: {
     }
   }, [currentUserId, video.likedBy]);
  
-  // Add refs to maintain video instances
+  // Create video player with proper lifecycle management
   const player = useVideoPlayer(video.videoUrl || video.url, p => {
     p.loop = true;
-    p.muted = false; // Enable audio for home screen videos
-    if (isActive) {
-      p.play();
-    }
+    p.muted = false;
   });
 
-  // Use the video metadata to determine content fit
+  // Calculate aspect ratio for better video responsiveness
+  const aspectRatio = video.aspectRatio || (video.isLandscape ? 16/9 : 9/16);
   const contentFit = video.isLandscape ? "contain" : "cover";
+  
+  // Handle player ready state
+  React.useEffect(() => {
+    const handlePlayerStatusChange = (status: any) => {
+      if (status.status === 'readyToPlay') {
+        setIsPlayerReady(true);
+      }
+    };
+
+    player.addListener('statusChange', handlePlayerStatusChange);
+    
+    return () => {
+      player.removeListener('statusChange', handlePlayerStatusChange);
+    };
+  }, [video.id]);
   
   // Auto pause/play when visibility changes
   React.useEffect(() => {
-    if (isActive) {
-      player.play();
-    } else {
-      player.pause();
+    if (isPlayerReady) {
+      if (isActive) {
+        player.play();
+      } else if (shouldPreload) {
+        // Preload next video
+        player.muted = true;
+        player.pause();
+      } else {
+        player.pause();
+      }
     }
-  }, [isActive]);
+  }, [isActive, isPlayerReady, player, shouldPreload]);
+
+  // Cleanup player when component unmounts
+  React.useEffect(() => {
+    return () => {
+      try {
+        if (player && typeof player.pause === 'function') {
+          player.pause();
+        }
+      } catch (error) {
+        // Player might already be destroyed, ignore the error
+        console.log('Player cleanup error (safe to ignore):', error);
+      }
+    };
+  }, [player]);
 
   // Handle like press
   const handleLikePress = async () => {
     if (!video.id || !currentUserId) return;
     
-    // Update local state immediately for instant feedback
-    if (isLiked) {
-      setLikesCount((prev: number) => Math.max(0, prev - 1));
-    } else {
-      setLikesCount((prev: number) => prev + 1);
-    }
-    setIsLiked(!isLiked);
+    // Store previous state for clean rollback
+    const prevLiked = isLiked;
+    const prevCount = likesCount;
     
-    // Update Firestore in background (non-blocking)
+    // Update local state immediately for instant feedback
+    setIsLiked(!prevLiked);
+    setLikesCount((prev: number) => prev + (prevLiked ? -1 : 1));
+    
+    // Update Firestore
     try {
       await likeVideo({ videoId: video.id, userId: currentUserId });
     } catch (error) {
-      console.error('Error liking video:', error);
-      // Revert local state on error
-      if (isLiked) {
-        setLikesCount((prev: number) => prev + 1);
-      } else {
-        setLikesCount((prev: number) => Math.max(0, prev - 1));
-      }
-      setIsLiked(isLiked);
+      // Rollback the optimistic updates cleanly
+      setIsLiked(prevLiked);
+      setLikesCount(prevCount);
     }
   };
 
@@ -79,6 +110,8 @@ function VideoItem({ video, isActive, videoHeight, likeVideo, currentUserId }: {
         }}
         contentFit={contentFit}
         nativeControls={false}
+        allowsFullscreen={false}
+        allowsPictureInPicture={false}
       />
       <PostOverlay
         posterName={video.posterName || "username"}
@@ -89,7 +122,16 @@ function VideoItem({ video, isActive, videoHeight, likeVideo, currentUserId }: {
       />
     </View>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.shouldPreload === nextProps.shouldPreload &&
+    prevProps.video.id === nextProps.video.id &&
+    prevProps.video.likes === nextProps.video.likes &&
+    prevProps.video.likedBy === nextProps.video.likedBy &&
+    prevProps.currentUserId === nextProps.currentUserId
+  );
+});
 
 export default function HomeScreen() {
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -101,8 +143,8 @@ export default function HomeScreen() {
   const { bottom } = useSafeAreaInsets();
   const { getAllVideos, likeVideo, user } = useSession();
  
-  // Calculate the available height for videos (screen height minus tab bar height)
-  const videoHeight = screenHeight - (bottom + 60); // 60 is the tab bar height from _layout.tsx
+  // Calculate the available height for videos
+  const videoHeight = screenHeight - (bottom + 60);
 
   // Load videos from Firestore
   const loadVideos = async (isRefresh = false) => {
@@ -113,14 +155,9 @@ export default function HomeScreen() {
         setIsLoading(true);
       }
       setError(null);
-      console.log('Loading videos from Firestore...');
-      
       const userVideos = await getAllVideos();
-      console.log('Loaded videos:', userVideos);
-      
       setVideos(userVideos || []);
     } catch (err) {
-      console.error('Error loading videos:', err);
       setError('Failed to load videos');
       setVideos([]);
     } finally {
@@ -129,12 +166,10 @@ export default function HomeScreen() {
     }
   };
 
-  // Handle pull to refresh
   const onRefresh = () => {
     loadVideos(true);
   };
 
-  // Load videos when component mounts
   useEffect(() => {
     loadVideos();
   }, []);
@@ -143,7 +178,7 @@ export default function HomeScreen() {
   useFocusEffect(
     React.useCallback(() => {
       setIsScreenFocused(true);
-      loadVideos(); // Reload videos when screen comes into focus
+      loadVideos();
       return () => {
         setIsScreenFocused(false);
       };
@@ -154,14 +189,10 @@ export default function HomeScreen() {
   const viewabilityConfig = {
     itemVisiblePercentThreshold: 80,
   };
+ 
 
   if (isLoading) {
-    return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <ActivityIndicator size="large" color="white" />
-        <Text className="text-white mt-4">Loading videos...</Text>
-      </View>
-    );
+    return <ShimmerSkeleton />;
   }
 
   if (error && videos.length === 0) {
@@ -176,7 +207,11 @@ export default function HomeScreen() {
   return (
     <FlatList
       data={videos}
-      removeClippedSubviews
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={3}
+      windowSize={5}
+      initialNumToRender={2}
+      updateCellsBatchingPeriod={100}
       viewabilityConfig={viewabilityConfig}
       className="flex-1 bg-black"
       pagingEnabled
@@ -190,6 +225,7 @@ export default function HomeScreen() {
           videoHeight={videoHeight}
           likeVideo={likeVideo}
           currentUserId={user?.uid || null}
+          shouldPreload={index === activeIndex + 1}
         />
       )}
       onMomentumScrollEnd={ev => {
@@ -204,6 +240,11 @@ export default function HomeScreen() {
           <Text className="text-gray-400 text-center">Record your first video!</Text>
         </View>
       }
+      getItemLayout={(data, index) => ({
+        length: videoHeight,
+        offset: videoHeight * index,
+        index,
+      })}
     />
   );
 }

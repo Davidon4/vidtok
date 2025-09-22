@@ -4,14 +4,17 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { RotateCcw, Pause, Play } from "lucide-react-native";
-import { Button, Pressable, StyleSheet, Text, View, TextInput, Alert, ActivityIndicator } from "react-native";
+import { Pressable, View, ActivityIndicator } from "react-native";
 import * as VideoThumbnails from "expo-video-thumbnails";
-import { useSession } from "@/context";
-import { showMessage } from "react-native-flash-message";
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useRouter } from 'expo-router';
+
+import { useSession } from "@/context";
+import { notify } from "@/utils/notify";
+import {Button} from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
 
 export default function Add() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -23,14 +26,45 @@ export default function Add() {
   const [isUploading, setIsUploading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const { user, uploadVideo, saveVideo, getVideoThumbnail, getResponsiveVideo } = useSession();
+  const { user, uploadVideo, saveVideo } = useSession();
   const router = useRouter();
 
-  // Create video player at top level
-  const player = useVideoPlayer(videoUri || '', (player) => {
-    player.loop = true;
-    player.muted = false; // Enable audio for video preview
-  });
+  // Create video player with useMemo to avoid recreation on every render
+  const player = useMemo(() => {
+    if (!videoUri) return null;
+    return useVideoPlayer(videoUri, (p) => {
+      p.loop = true;
+      p.muted = false; // Enable audio for video preview
+    });
+  }, [videoUri]);
+
+  // Player cleanup
+  useEffect(() => {
+    return () => {
+      try {
+        if (player && typeof player.pause === 'function') {
+          player.pause();
+        }
+      } catch (error) {
+        console.log('Player cleanup error (safe to ignore):', error);
+      }
+    };
+  }, [player]);
+
+  // Listen to playback status changes instead of manual tracking
+  useEffect(() => {
+    if (!player) return;
+
+    const handlePlaybackStatusUpdate = (status: any) => {
+      setIsPlaying(status.isPlaying || false);
+    };
+
+    player.addListener('statusChange', handlePlaybackStatusUpdate);
+    
+    return () => {
+      player.removeListener('statusChange', handlePlaybackStatusUpdate);
+    };
+  }, [player]);
 
   // Timer effect
   useEffect(() => {
@@ -51,11 +85,13 @@ export default function Add() {
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
+      <View className="flex-1 bg-black">
+        <Text className="text-center">
           We need your permission to use the camera
         </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
+        <Button onPress={requestPermission}>
+          <Text>Grant permission</Text>
+          </Button>
       </View>
     );
   }
@@ -69,24 +105,26 @@ export default function Add() {
     }
     
     try {
-    setRecording(true);
-      console.log("Starting video recording...");
-    const video = await ref.current?.recordAsync();
-      console.log("Recording completed, video object:", video);
+      if (!ref.current) {
+        notify.error("Camera not ready");
+        return;
+      }
+      
+      setRecording(true);
+      const video = await ref.current.recordAsync();
       
       if (video && typeof video === 'object' && 'uri' in video) {
         const videoUri = (video as { uri: string }).uri;
         setVideoUri(videoUri);
-        console.log("Video recorded successfully:", videoUri);
       } else {
-        console.log("No video URI found in recording result");
+        notify.error("No video URI found in recording result");
       }
     } catch (error) {
       console.error("Error during recording:", error);
       setRecording(false);
+      notify.error("Recording failed. Please try again.");
     }
   };
-
 
   const toggleFacing = () => {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
@@ -94,13 +132,16 @@ export default function Add() {
 
   const handleUploadVideo = async () => {
     if (!videoUri || !user) {
-      Alert.alert("Error", "No video to upload or user not logged in");
+      notify.error("No video to upload or user not logged in");
       return;
     }
 
     setIsUploading(true);
     
     try {
+      // Show initial upload progress
+      notify.success("Uploading video...", { duration: 2000 });
+      
       // Upload video to Cloudinary
       const uploadResult = await uploadVideo({
         videoUri,
@@ -108,50 +149,34 @@ export default function Add() {
         filename: `video_${Date.now()}.mp4`
       });
 
-      // Show success message after upload completes
-      showMessage({
-        message: "Success",
-        description: "Video uploaded successfully!",
-        type: "success",
-        duration: 3000, // Show for 3 seconds to match navigation delay
+      // Show upload success and saving progress
+      notify.success("Video uploaded! Saving details...", { duration: 2000 });
+
+      // Save metadata to Firestore
+      const thumbnail = await VideoThumbnails.getThumbnailAsync(videoUri, {
+        time: 1000,
       });
 
-      // Reset form
-      setVideoUri(null);
+      await saveVideo({
+        videoUrl: uploadResult,
+        posterName: user.displayName || "Anonymous",
+        userId: user.uid,
+        width: thumbnail.width,
+        height: thumbnail.height,
+        duration: 0,
+      });
 
-      // Navigate to home page after a longer delay to show the message
-      setTimeout(() => {
-        router.push('/(app)');
-      }, 3000); // 3 second delay to show the success message
+      // Show final success and navigate
+      notify.success("Video posted successfully!", {
+        onHide: () => {
+          setVideoUri(null);
+          router.replace('/(app)');
+        },
+      });
 
-      // Try to save metadata to Firestore (non-blocking)
-      try {
-        const thumbnail = await VideoThumbnails.getThumbnailAsync(videoUri, {
-          time: 1000,
-        });
-
-        await saveVideo({
-          videoUrl: uploadResult,
-          posterName: user.displayName || "Anonymous",
-          userId: user.uid,
-          width: thumbnail.width,
-          height: thumbnail.height,
-          duration: 0,
-        });
-
-        console.log("Video metadata saved to Firestore");
-      } catch (firestoreError) {
-        console.error("Failed to save metadata to Firestore:", firestoreError);
-        // Don't show error to user since video upload was successful
-      }
     } catch (error) {
       console.error("Upload error:", error);
-      showMessage({
-        message: "Error",
-        description: "Failed to upload video. Please try again.",
-        type: "danger",
-        duration: 4000, // Show for 4 seconds so user can read the error
-      });
+      notify.error("Failed to upload video. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -170,26 +195,25 @@ export default function Add() {
   };
 
   const togglePlayPause = () => {
+    if (!player) return;
+    
     if (isPlaying) {
       player.pause();
     } else {
       player.play();
     }
-    setIsPlaying(!isPlaying);
+    // isPlaying will be updated automatically via playbackStatusUpdate listener
   };
 
   const renderVideoPreview = () => {
-    if (!videoUri) {
-      console.log("No videoUri, not rendering preview");
+    if (!videoUri || !player) {
       return null;
     }
 
-    console.log("Rendering video preview with URI:", videoUri);
-
     return (
-      <View style={styles.previewContainer}>
+      <View className="flex-1 bg-black">
         <VideoView
-          style={styles.videoPreview}
+          style={{ flex: 1, backgroundColor: "#000" }}
           player={player}
           nativeControls={false}
           contentFit="contain"
@@ -197,10 +221,10 @@ export default function Add() {
         
         {/* Play/Pause Overlay */}
         <Pressable
-          style={styles.playButtonOverlay}
+          className="absolute top-0 left-0 right-0 bottom-0 items-center justify-center bg-black/30"
           onPress={togglePlayPause}
         >
-          <View style={styles.playButton}>
+          <View className="w-20 h-20 rounded-full bg-black/60 items-center justify-center border-2 border-white">
             {isPlaying ? (
               <Pause size={32} color="white" />
             ) : (
@@ -209,25 +233,25 @@ export default function Add() {
           </View>
         </Pressable>
         
-        <View style={styles.formContainer}>
-          <View style={styles.buttonContainer}>
+        <View className="absolute bottom-0 left-0 right-0 bg-black/80 p-5 pb-10">
+          <View className="flex-row justify-between gap-3">
             <Pressable
-              style={[styles.button, styles.clearButton]}
+              className={`flex-1 py-3 px-5 rounded-lg items-center justify-center bg-transparent border border-white ${isUploading ? 'opacity-50' : ''}`}
               onPress={clearVideo}
               disabled={isUploading}
             >
-              <Text style={styles.clearButtonText}>Clear</Text>
+              <Text className="text-white text-base font-semibold">Clear</Text>
             </Pressable>
             
             <Pressable
-              style={[styles.button, styles.uploadButton, isUploading && styles.disabledButton]}
+              className={`flex-1 py-3 px-5 rounded-lg items-center justify-center ${isUploading ? 'bg-gray-600' : 'bg-red-600'}`}
               onPress={handleUploadVideo}
               disabled={isUploading}
             >
               {isUploading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.uploadButtonText}>Post Video</Text>
+                <Text className="text-white text-base font-semibold">Post Video</Text>
               )}
             </Pressable>
           </View>
@@ -239,9 +263,9 @@ export default function Add() {
 
   const renderCamera = () => {
     return (
-      <View style={styles.cameraContainer}>
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         <CameraView
-          style={styles.camera}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           ref={ref}
           mode={mode}
           facing={facing}
@@ -251,34 +275,30 @@ export default function Add() {
         
         {/* Recording Timer */}
         {recording && (
-          <View style={styles.timerContainer}>
-            <View style={styles.timerBackground}>
-              <Text style={styles.timerText}>{formatTime(recordingTime)}</Text>
+          <View className="absolute top-20 left-0 right-0 items-center">
+            <View className="bg-black/70 px-4 py-2 rounded-full border-2 border-red-500">
+              <Text className="text-white text-lg font-bold font-mono">{formatTime(recordingTime)}</Text>
             </View>
           </View>
         )}
         
-        <View style={styles.shutterContainer}>
-          <View style={styles.placeholder} />
+        <View className="absolute bottom-11 left-0 w-full items-center flex-row justify-between px-8">
+          <View className="w-8 h-8" />
           <Pressable onPress={recordVideo}>
             {({ pressed }) => (
               <View
-                style={[
-                  styles.shutterBtn,
-                  {
-                    opacity: pressed ? 0.5 : 1,
-                    backgroundColor: recording ? "rgba(255,0,0,0.3)" : "transparent",
-                  },
-                ]}
+                className="border-5 border-white w-20 h-20 rounded-full items-center justify-center"
+                style={{
+                  opacity: pressed ? 0.5 : 1,
+                  backgroundColor: recording ? "rgba(255,0,0,0.3)" : "transparent",
+                }}
               >
                 <View
-                  style={[
-                    styles.shutterBtnInner,
-                    {
-                      backgroundColor: recording ? "red" : "white",
-                      borderRadius: recording ? 70 : 100,
-                    },
-                  ]}
+                  className="w-16 h-16"
+                  style={{
+                    backgroundColor: recording ? "red" : "white",
+                    borderRadius: recording ? 70 : 100,
+                  }}
                 />
               </View>
             )}
@@ -292,184 +312,8 @@ export default function Add() {
   };
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-black">
       {videoUri ? renderVideoPreview() : renderCamera()}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  cameraContainer: StyleSheet.absoluteFillObject,
-  camera: StyleSheet.absoluteFillObject,
-  shutterContainer: {
-    position: "absolute",
-    bottom: 44,
-    left: 0,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 30,
-  },
-  placeholder: {
-    width: 32,
-    height: 32,
-  },
-  timerContainer: {
-    position: "absolute",
-    top: 60,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  timerBackground: {
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "red",
-  },
-  timerText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-    fontFamily: "monospace",
-  },
-  debugContainer: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 10,
-    borderRadius: 8,
-  },
-  debugText: {
-    color: "white",
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  fallbackContainer: {
-    position: "absolute",
-    top: "50%",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 20,
-  },
-  fallbackText: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  fallbackSubtext: {
-    color: "#ccc",
-    fontSize: 16,
-  },
-  shutterBtn: {
-    backgroundColor: "transparent",
-    borderWidth: 5,
-    borderColor: "white",
-    width: 85,
-    height: 85,
-    borderRadius: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shutterBtnInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 100
-  },
-  previewContainer: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  videoPreview: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  playButtonOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  playButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "white",
-  },
-  playButtonText: {
-    fontSize: 32,
-    color: "white",
-  },
-  formContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 20,
-    paddingBottom: 40,
-  },
-  input: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    fontSize: 16,
-    color: "#000",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  clearButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "white",
-  },
-  clearButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  uploadButton: {
-    backgroundColor: "#DC2626",
-  },
-  disabledButton: {
-    backgroundColor: "#666",
-  },
-  uploadButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
