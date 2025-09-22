@@ -1,14 +1,13 @@
 import React from 'react';
-import { View, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import * as yup from "yup";
 import { router } from 'expo-router';
 
-import { Input, PasswordInput } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { Label } from '@/components/ui/label';
+import { FormField } from './form-field';
 
 const schema = yup.object({
     email: yup.string().email().required(),
@@ -42,52 +41,30 @@ export const SigninForm = ({ onSubmit = () => {} }: SigninFormProps) => {
 
         {/* Form */}
         <View>
-
-        <Controller
+       <FormField
         control={control}
-        rules={{
-          required: true,
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-      <Label htmlFor='email' nativeID='email' className='text-black py-2'>Email</Label>
-      <Input
-      keyboardType="email-address"
-      onBlur={onBlur}
-      onChangeText={onChange}
-      value={value}
-      textContentType="emailAddress"
-      autoComplete="email"
-      placeholder="Email"
-    />
-    </>
-        )}
         name="email"
+        label="Email"
+        placeholder="Email"
+        secureTextEntry={false}
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        error={errors.email}
+        autoComplete="email"
       />
-      {errors.email && <Text className="text-red-500">Valid email is required.</Text>} 
 
-        <Controller
+      <FormField
         control={control}
-        rules={{
-          required: true,
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-          <Label htmlFor='password' nativeID="password" className="text-black py-2">Password</Label>
-        <PasswordInput
-      textContentType="password"
-      autoComplete="password"
-      placeholder="Password"
-      onBlur={onBlur}
-      onChangeText={onChange}
-      value={value}
-    />
-    </>
-        )}
         name="password"
+        label="Password"
+        placeholder="Password"
+        secureTextEntry={true}
+        keyboardType="default"
+        textContentType="password"
+        error={errors.password}
+        autoComplete="password"
       />
-        {errors.password && <Text className="text-red-500">Password must be at least 6 characters.</Text>}
-        </View>
+      </View>
 
     <Button onPress={handleSubmit(onSubmit)} className="my-6 bg-red-600">
       {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (

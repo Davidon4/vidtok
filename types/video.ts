@@ -14,12 +14,9 @@ export interface VideoMetadata {
   userId: string;
   timestamp: Timestamp;
   likes?: number;
-  likedBy?: string[]; // Array of user IDs who liked this video
-  comments?: number;
-  shares?: number;
+  likedBy?: string[];
   thumbnailUrl?: string;
   duration?: number;
-  views?: number;
   aspectRatio?: number;
   isLandscape?: boolean;
   width?: number;
@@ -70,63 +67,11 @@ export interface VideoQueryParams {
 }
 
 /**
- * Video search parameters
- */
-export interface VideoSearchParams {
-  query: string;
-}
-
-/**
- * Video update parameters
- */
-export interface VideoUpdateParams {
-  videoId: string;
-  updates: Partial<VideoMetadata>;
-}
-
-/**
- * Video delete parameters
- */
-export interface VideoDeleteParams {
-  videoId: string;
-}
-
-/**
  * Video like parameters
  */
 export interface VideoLikeParams {
   videoId: string;
   userId: string;
-}
-
-/**
- * Video view increment parameters
- */
-export interface VideoViewIncrementParams {
-  videoId: string;
-}
-
-/**
- * File upload parameters
- */
-export interface FileUploadParams {
-  fileUri: string;
-  userId: string;
-  filename?: string;
-}
-
-/**
- * File delete parameters
- */
-export interface FileDeleteParams {
-  filePath: string;
-}
-
-/**
- * File URL parameters
- */
-export interface FileUrlParams {
-  filePath: string;
 }
 
 /**
@@ -157,14 +102,6 @@ export interface VideoListResponse {
 }
 
 /**
- * Video delete response
- */
-export interface VideoDeleteResponse {
-  success: boolean;
-  error?: string;
-}
-
-/**
  * Video like response
  */
 export interface VideoLikeResponse {
@@ -181,49 +118,12 @@ export interface VideoViewIncrementResponse {
 }
 
 /**
- * File upload response
- */
-export interface FileUploadResponse {
-  success: boolean;
-  fileUrl?: string;
-  error?: string;
-}
-
-/**
- * File delete response
- */
-export interface FileDeleteResponse {
-  success: boolean;
-  error?: string;
-}
-
-/**
- * File URL response
- */
-export interface FileUrlResponse {
-  success: boolean;
-  fileUrl?: string;
-  error?: string;
-}
-
-/**
  * Video service function types
  */
 export type VideoUploadFunction = (params: VideoUploadParams) => Promise<string>;
 export type VideoSaveFunction = (params: VideoSaveParams) => Promise<string>;
 export type VideoListFunction = (params?: VideoQueryParams) => Promise<VideoMetadata[]>;
-export type VideoUserListFunction = (userId: string) => Promise<VideoMetadata[]>;
-export type VideoUpdateFunction = (params: VideoUpdateParams) => Promise<void>;
-export type VideoDeleteFunction = (params: VideoDeleteParams) => Promise<void>;
 export type VideoLikeFunction = (params: VideoLikeParams) => Promise<void>;
-export type VideoViewIncrementFunction = (params: VideoViewIncrementParams) => Promise<void>;
-
-/**
- * File service function types
- */
-export type FileUploadFunction = (params: FileUploadParams) => Promise<string>;
-export type FileDeleteFunction = (params: FileDeleteParams) => Promise<void>;
-export type FileUrlFunction = (params: FileUrlParams) => Promise<string>;
 
 /**
  * Video service interface
@@ -232,23 +132,10 @@ export interface VideoService {
   uploadVideo: VideoUploadFunction;
   saveVideo: VideoSaveFunction;
   getAllVideos: VideoListFunction;
-  getUserVideoList: VideoUserListFunction;
-  updateVideo: VideoUpdateFunction;
-  deleteVideo: VideoDeleteFunction;
   likeVideo: VideoLikeFunction;
-  incrementViews: VideoViewIncrementFunction;
 }
 
 /**
- * File service interface
+ * Media service interface
  */
-export interface FileService {
-  uploadImage: FileUploadFunction;
-  deleteFile: FileDeleteFunction;
-  getFileURL: FileUrlFunction;
-}
-
-/**
- * Combined service interface
- */
-export interface MediaService extends VideoService, FileService {}
+export interface MediaService extends VideoService {}

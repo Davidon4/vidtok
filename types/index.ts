@@ -1,5 +1,4 @@
 /**
- * Main types export file
  * Re-exports all type definitions for easy importing
  */
 
@@ -9,6 +8,9 @@ export * from './video';
 // Auth types
 export * from './auth';
 
+// Post overlay types
+export * from './post-overlay';
+
 // Re-export commonly used types
 export type {
   VideoMetadata,
@@ -16,15 +18,8 @@ export type {
   VideoUploadParams,
   VideoSaveParams,
   VideoQueryParams,
-  VideoUpdateParams,
-  VideoDeleteParams,
   VideoLikeParams,
-  VideoViewIncrementParams,
-  FileUploadParams,
-  FileDeleteParams,
-  FileUrlParams,
   VideoService,
-  FileService,
   MediaService,
 } from './video';
 
@@ -36,3 +31,7 @@ export type {
   AuthService as AuthServiceType,
   SessionContext as SessionContextType,
 } from './auth';
+
+export type {
+  PostOverlayProps as PostOverlayPropsType,
+} from './post-overlay';

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Heart } from "lucide-react-native";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PostOverlayProps } from '@/types';
 
 // Function to calculate relative time
 const getRelativeTime = (timestamp: Date | string | any | undefined): string => {
@@ -13,14 +14,11 @@ const getRelativeTime = (timestamp: Date | string | any | undefined): string => 
   // Handle Firestore Timestamp objects
   if (timestamp && typeof timestamp === 'object' && timestamp.toDate) {
     postTime = timestamp.toDate();
-    console.log('getRelativeTime - using toDate():', postTime);
   } else if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
     // Handle Firestore Timestamp with seconds property
     postTime = new Date(timestamp.seconds * 1000);
-    console.log('getRelativeTime - using seconds:', postTime);
   } else {
     postTime = new Date(timestamp);
-    console.log('getRelativeTime - using new Date():', postTime);
   }
   
   const diffInSeconds = Math.floor((now.getTime() - postTime.getTime()) / 1000);
@@ -39,13 +37,7 @@ const getRelativeTime = (timestamp: Date | string | any | undefined): string => 
   }
 };
 
-interface PostOverlayProps {
-  posterName: string;
-  onLikePress?: () => void;
-  isLiked?: boolean;
-  timestamp?: Date | string;
-  likes?: number;
-}
+
 
 export function PostOverlay({ posterName, onLikePress, isLiked = false, timestamp, likes = 0 }: PostOverlayProps) {
   return (

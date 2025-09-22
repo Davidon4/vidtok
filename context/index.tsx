@@ -1,6 +1,5 @@
 /**
  * Authentication context module providing global auth state and methods.
- * @module
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -8,34 +7,20 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import {
   getCurrentUser,
   login,
-  logout,
   register,
   signInWithGoogle,
   uploadUserVideo,
-  getUserFileURL,
   getVideoThumbnail,
   getResponsiveVideo,
   saveVideo,
   getAllVideos,
-  getUserVideoList,
-  updateVideo,
-  deleteVideo,
   likeUserVideo,
-  incrementViews,
 } from "@/services/firebase-service";
 import { 
-  SessionContext,
   VideoUploadParams,
   VideoSaveParams,
   VideoQueryParams,
-  VideoSearchParams,
-  VideoUpdateParams,
-  VideoDeleteParams,
   VideoLikeParams,
-  VideoViewIncrementParams,
-  FileUploadParams,
-  FileDeleteParams,
-  FileUrlParams,
   SignInParams,
   SignUpParams,
   GoogleSignInParams,
@@ -51,34 +36,25 @@ import { auth } from "@/services/firebase-config";
  * Authentication context interface defining available methods and state
  * for managing user authentication throughout the application.
  */
-interface AuthContextType {
+interface SessionContextType {
   user: User | null;
   isLoading: boolean;
   signIn: (params: SignInParams) => Promise<User | undefined>;
   signUp: (params: SignUpParams) => Promise<User | undefined>;
   signInWithGoogle: (params?: GoogleSignInParams) => Promise<User | undefined>;
-  signOut: () => void;
   uploadVideo: (params: VideoUploadParams) => Promise<string>;
-  getFileURL: (params: FileUrlParams) => Promise<string>;
   getVideoThumbnail: (videoUrl: string, options?: { width?: number; height?: number; time?: number }) => Promise<string>;
   getResponsiveVideo: (videoUrl: string, screenWidth: number) => Promise<string>;
   saveVideo: (params: VideoSaveParams) => Promise<string>;
   getAllVideos: (params?: VideoQueryParams) => Promise<VideoMetadata[]>;
-  getUserVideoList: (userId: string) => Promise<VideoMetadata[]>;
-  updateVideo: (params: VideoUpdateParams) => Promise<void>;
-  deleteVideo: (params: VideoDeleteParams) => Promise<void>;
   likeVideo: (params: VideoLikeParams) => Promise<void>;
-  incrementViews: (params: VideoViewIncrementParams) => Promise<void>;
 }
 
-// ============================================================================
-// Context Creation
-// ============================================================================
 
 /**
  * Authentication context instance
  */
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+const SessionContext = createContext<SessionContextType>({} as SessionContextType);
 
 // ============================================================================
 // Hook
@@ -87,8 +63,8 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 /**
  * Custom hook to access authentication context
  */
-export function useSession(): AuthContextType {
-  const value = useContext(AuthContext);
+export function useSession(): SessionContextType {
+  const value = useContext(SessionContext);
 
   if (process.env.NODE_ENV !== "production") {
     if (!value) {
@@ -107,120 +83,99 @@ export function useSession(): AuthContextType {
  * SessionProvider component that manages authentication state
  */
 export function SessionProvider(props: { children: React.ReactNode }) {
-  // ============================================================================
-  // State & Hooks
-  // ============================================================================
 
-  /**
-   * Current authenticated user state
-   */
-  const [user, setUser] = useState<User | null>(null);
 
-  /**
-   * Loading state for authentication operations
-   */
-  const [isLoading, setIsLoading] = useState(true);
+// ============================================================================
+// State & Hooks
+// ============================================================================
 
-  // ============================================================================
-  // Effects
-  // ============================================================================
+/**
+* Current authenticated user state
+*/
+const [user, setUser] = useState<User | null>(null);
 
-  /**
-   * Sets up Firebase authentication state listener
-   * Automatically updates user state on auth changes
-   */
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
-    });
+/**
+* Loading state for authentication operations
+*/
+const [isLoading, setIsLoading] = useState(true);
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
+// ============================================================================
+// Effects
+// ============================================================================
 
-  // ============================================================================
-  // Handlers
-  // ============================================================================
+/**
+* Automatically updates user state on auth changes
+*/
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+  setUser(user);
+  setIsLoading(false);
+});
 
-  /**
-   * Handles user sign-in process
-   */
+  // Cleanup subscription on unmount
+  return () => unsubscribe();
+}, []);
+
+// ============================================================================
+// Handlers
+// ============================================================================
+
+/**
+* Handles user sign-in process
+*/
   const handleSignIn = async (params: SignInParams) => {
     try {
       const response = await login(params.email, params.password);
       return response?.user;
     } catch (error) {
-      console.error("[handleSignIn error] ==>", error);
+      console.error("handleSignIn error =>", error);
       return undefined;
     }
   };
 
-  /**
-   * Handles new user registration process
-   */
+/**
+* Handles new user registration process
+*/
   const handleSignUp = async (params: SignUpParams) => {
     try {
       const response = await register(params.email, params.password, params.name);
       return response?.user;
     } catch (error) {
-      console.error("[handleSignUp error] ==>", error);
+      console.error("handleSignUp error =>", error);
       return undefined;
     }
   };
 
-  /**
-   * Handles Google sign-in process
-   */
+/**
+* Handles Google sign-in process
+*/
   const handleGoogleSignIn = async (params?: GoogleSignInParams) => {
     try {
       const response = await signInWithGoogle();
       return response?.user;
     } catch (error) {
-      console.error("[handleGoogleSignIn error] ==>", error);
+      console.error("handleGoogleSignIn error =>", error);
       return undefined;
     }
   };
 
-  /**
-   * Handles user sign-out process
-   */
-  const handleSignOut = async () => {
-    try {
-      await logout();
-      setUser(null);
-    } catch (error) {
-      console.error("[handleSignOut error] ==>", error);
-    }
-  };
-
-  // ============================================================================
-  // Render
-  // ============================================================================
-
   return (
-    <AuthContext.Provider
+    <SessionContext.Provider
       value={{
         signIn: handleSignIn,
         signUp: handleSignUp,
         signInWithGoogle: handleGoogleSignIn,
-        signOut: handleSignOut,
         uploadVideo: uploadUserVideo,
-        getFileURL: getUserFileURL,
         getVideoThumbnail,
         getResponsiveVideo,
         saveVideo,
         getAllVideos,
-        getUserVideoList,
-        updateVideo,
-        deleteVideo,
         likeVideo: likeUserVideo,
-        incrementViews,
         user,
         isLoading,
       }}
     >
       {props.children}
-    </AuthContext.Provider>
+    </SessionContext.Provider>
   );
 }

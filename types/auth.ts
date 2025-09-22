@@ -3,6 +3,7 @@
  */
 
 import { User } from 'firebase/auth';
+import { Control, FieldError } from 'react-hook-form';
 
 /**
  * User sign-in parameters
@@ -43,7 +44,6 @@ export interface AuthResponse {
 export type SignInFunction = (params: SignInParams) => Promise<User | undefined>;
 export type SignUpFunction = (params: SignUpParams) => Promise<User | undefined>;
 export type GoogleSignInFunction = (params?: GoogleSignInParams) => Promise<User | undefined>;
-export type SignOutFunction = () => void;
 
 /**
  * Authentication service interface
@@ -52,7 +52,6 @@ export interface AuthService {
   signIn: SignInFunction;
   signUp: SignUpFunction;
   signInWithGoogle: GoogleSignInFunction;
-  signOut: SignOutFunction;
 }
 
 /**
@@ -61,6 +60,24 @@ export interface AuthService {
 export interface SessionContext extends AuthService, MediaService {
   user: User | null;
   isLoading: boolean;
+}
+
+/**
+ * Input field interface
+ */
+export interface InputField {
+  control: Control<any>;
+  name: string;
+  label: string;
+  placeholder: string;
+  secureTextEntry?: boolean;
+  keyboardType?: string;
+  textContentType: string;
+  autoComplete: string;
+  onBlur?: (e: any) => void;
+  onChangeText?: (text: string) => void;
+  value?: string;
+  error?: FieldError;
 }
 
 /**

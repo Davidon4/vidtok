@@ -1,13 +1,11 @@
 /**
  * Firebase authentication service module.
  * Provides methods for user authentication and session management.
- * @module
  */
 
 import { 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut,
   updateProfile,
   User,
   UserCredential,
@@ -20,9 +18,6 @@ import { auth } from './firebase-config';
 import Constants from 'expo-constants';
 import { 
   uploadVideoToCloudinary, 
-  deleteVideoFromCloudinary, 
-  getVideoThumbnailUrl, 
-  getOptimizedVideoUrl,
   getVideoInfo,
   getVideoPosterUrl,
   getResponsiveVideoUrl
@@ -30,38 +25,20 @@ import {
 import { 
   saveVideoMetadata, 
   getVideos, 
-  getUserVideos, 
-  updateVideoMetadata, 
-  deleteVideoMetadata,
   likeVideo,
-  incrementVideoViews,
-  VideoMetadata 
 } from './firestore-service';
 import { getVideoDimensionsFromUri, calculateAspectRatio, isLandscapeVideo } from '../utils/video-utils';
 import { 
   VideoUploadParams,
   VideoSaveParams,
   VideoQueryParams,
-  VideoSearchParams,
-  VideoUpdateParams,
-  VideoDeleteParams,
   VideoLikeParams,
-  VideoViewIncrementParams,
-  FileUploadParams,
-  FileDeleteParams,
-  FileUrlParams,
   VideoUploadFunction,
   VideoSaveFunction,
   VideoListFunction,
-  VideoUserListFunction,
-  VideoUpdateFunction,
-  VideoDeleteFunction,
   VideoLikeFunction,
-  VideoViewIncrementFunction,
-  FileUploadFunction,
-  FileDeleteFunction,
-  FileUrlFunction
-} from '../types';
+  VideoMetadata
+} from '@/types';
 
 const {
   EXPO_PUBLIC_GOOGLE_CLIENT_ID,
@@ -80,7 +57,6 @@ export interface FirebaseUserResponse {
 
 /**
  * Retrieves the current authenticated user and their session
- * Utilizes Firebase's onAuthStateChanged to provide real-time auth state
  */
 export const getCurrentUser = async (): Promise<{ user: User } | null> => {
   try {
@@ -91,7 +67,7 @@ export const getCurrentUser = async (): Promise<{ user: User } | null> => {
       });
     });
   } catch (error) {
-    console.error("[error getting user] ==>", error);
+    console.error("error getting user =>", error);
     return null;
   }
 };
@@ -111,25 +87,13 @@ export async function login(
     );
     return { user: userCredential.user };
   } catch (e) {
-    console.error("[error logging in] ==>", e);
+    console.error("error logging in =>", e);
     throw e;
   }
 }
 
 /**
- * Logs out the current user by terminating their session
- */
-export async function logout(): Promise<void> {
-  try {
-    await signOut(auth);
-  } catch (e) {
-    console.error("[error logging out] ==>", e);
-    throw e;
-  }
-}
-
-/**
- * Creates a new user account and optionally sets their display name
+ * Creates a new user account and set their display name
  */
 export async function register(
   email: string,
@@ -143,12 +107,11 @@ export async function register(
     }
     return { user: userCredential.user };
   } catch (e) {
-    console.error("[error registering] ==>", e);
+    console.error("error registering =>", e);
     throw e;
   }
 }
 
-// Configure WebBrowser for better UX
 WebBrowser.maybeCompleteAuthSession();
 
 /**
@@ -156,71 +119,66 @@ WebBrowser.maybeCompleteAuthSession();
  */
 export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefined> {
   try {
-    // Create the OAuth request
+    // Use the Expo proxy URL that Google accepts
+    const redirectUri = 'https://auth.expo.io/@king_juggernaut-2/vidtok';
+    
+    console.log('Using redirect URI:', redirectUri);
+
     const request = new AuthSession.AuthRequest({
       clientId: EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
       scopes: ['openid', 'profile', 'email'],
-      redirectUri: AuthSession.makeRedirectUri({
-        scheme: 'vidtok',
-        path: 'auth',
-      }),
+      redirectUri,
       responseType: AuthSession.ResponseType.Code,
       extraParams: {},
       prompt: AuthSession.Prompt.SelectAccount,
     });
 
-    // Start the authentication flow
     const result = await request.promptAsync({
       authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
     });
 
     if (result.type === 'success') {
-      // Exchange the authorization code for an access token
+      console.log('Authorization successful, exchanging code for token...');
+      console.log('Code:', result.params.code);
+      
       const tokenResponse = await AuthSession.exchangeCodeAsync(
         {
           clientId: EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
           code: result.params.code,
-          redirectUri: AuthSession.makeRedirectUri({
-            scheme: 'vidtok',
-            path: 'auth',
-          }),
-          extraParams: {
-            code_verifier: request.codeChallenge || '',
-          },
+          redirectUri,
+          extraParams: {},
         },
         {
           tokenEndpoint: 'https://oauth2.googleapis.com/token',
         }
       );
 
-      // Get user info from Google
-      const userInfoResponse = await fetch(
-        `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenResponse.accessToken}`
-      );
-      const userInfo = await userInfoResponse.json();
-
+      console.log('Token response received:', !!tokenResponse.idToken);
+      
       // Create a Google credential with the ID token
       const googleCredential = GoogleAuthProvider.credential(tokenResponse.idToken);
       
       // Sign-in the user with the credential
       const userCredential = await signInWithCredential(auth, googleCredential);
       
+      console.log('Firebase sign-in successful');
       return { user: userCredential.user };
     } else {
+      console.log('Authorization failed:', result.type);
       throw new Error('Google sign-in was cancelled or failed');
     }
   } catch (e) {
-    console.error("[error signing in with Google] ==>", e);
+    console.error("error signing in with Google =>", e);
     throw e;
   }
 }
 
 // ============================================================================
-// Storage Services
+// Cloudinary Storage Services
 // ============================================================================
 
 /**
- * Upload a video file to Cloudinary
+ * Upload a user video to Cloudinary
  */
 export const uploadUserVideo: VideoUploadFunction = async (params: VideoUploadParams): Promise<string> => {
   try {
@@ -230,26 +188,7 @@ export const uploadUserVideo: VideoUploadFunction = async (params: VideoUploadPa
     });
     return result.secureUrl;
   } catch (error) {
-    console.error("[error uploading video] ==>", error);
-    throw error;
-  }
-};
-
-/**
- * Get optimized video URL from Cloudinary
- */
-export const getUserFileURL: FileUrlFunction = async (params: FileUrlParams): Promise<string> => {
-  try {
-    // Extract public ID from Cloudinary URL
-    const videoInfo = getVideoInfo(params.filePath);
-    
-    if (!videoInfo) {
-      throw new Error('Invalid Cloudinary URL');
-    }
-    
-    return getOptimizedVideoUrl(videoInfo.publicId);
-  } catch (error) {
-    console.error("[error getting file URL] ==>", error);
+    console.error("error uploading video =>", error);
     throw error;
   }
 };
@@ -271,7 +210,7 @@ export const getVideoThumbnail = async (videoUrl: string, options?: {
     
     return getVideoPosterUrl(videoInfo.publicId, options);
   } catch (error) {
-    console.error("[error getting video thumbnail] ==>", error);
+    console.error("error getting video thumbnail =>", error);
     throw error;
   }
 };
@@ -289,7 +228,7 @@ export const getResponsiveVideo = async (videoUrl: string, screenWidth: number):
     
     return getResponsiveVideoUrl(videoInfo.publicId, screenWidth);
   } catch (error) {
-    console.error("[error getting responsive video] ==>", error);
+    console.error("error getting responsive video =>", error);
     throw error;
   }
 };
@@ -303,7 +242,6 @@ export const getResponsiveVideo = async (videoUrl: string, screenWidth: number):
  */
 export const saveVideo: VideoSaveFunction = async (params: VideoSaveParams): Promise<string> => {
   try {
-    // Calculate aspect ratio and orientation if dimensions are provided
     let aspectRatio: number | undefined;
     let isLandscape: boolean | undefined;
     let { width, height } = params;
@@ -312,7 +250,6 @@ export const saveVideo: VideoSaveFunction = async (params: VideoSaveParams): Pro
       aspectRatio = calculateAspectRatio(width, height);
       isLandscape = isLandscapeVideo(aspectRatio);
     } else {
-      // Try to get dimensions from video URL
       try {
         const dimensions = await getVideoDimensionsFromUri(params.videoUrl);
         aspectRatio = dimensions.aspectRatio;
@@ -336,7 +273,7 @@ export const saveVideo: VideoSaveFunction = async (params: VideoSaveParams): Pro
       isLandscape,
     });
   } catch (error) {
-    console.error("[error saving video] ==>", error);
+    console.error("error saving video =>", error);
     throw error;
   }
 };
@@ -350,46 +287,11 @@ export const getAllVideos: VideoListFunction = async (params?: VideoQueryParams)
     const lastDoc = params?.lastDoc;
     return await getVideos({ pageSize, lastDoc });
   } catch (error) {
-    console.error("[error getting videos] ==>", error);
+    console.error("error getting videos =>", error);
     throw error;
   }
 };
 
-/**
- * Get videos by user ID
- */
-export const getUserVideoList: VideoUserListFunction = async (userId: string): Promise<VideoMetadata[]> => {
-  try {
-    return await getUserVideos(userId);
-  } catch (error) {
-    console.error("[error getting user videos] ==>", error);
-    throw error;
-  }
-};
-
-/**
- * Update video metadata
- */
-export const updateVideo: VideoUpdateFunction = async (params: VideoUpdateParams): Promise<void> => {
-  try {
-    await updateVideoMetadata({ videoId: params.videoId, updates: params.updates });
-  } catch (error) {
-    console.error("[error updating video] ==>", error);
-    throw error;
-  }
-};
-
-/**
- * Delete video
- */
-export const deleteVideo: VideoDeleteFunction = async (params: VideoDeleteParams): Promise<void> => {
-  try {
-    await deleteVideoMetadata({ videoId: params.videoId });
-  } catch (error) {
-    console.error("[error deleting video] ==>", error);
-    throw error;
-  }
-};
 
 /**
  * Like a video
@@ -398,19 +300,7 @@ export const likeUserVideo: VideoLikeFunction = async (params: VideoLikeParams):
   try {
     await likeVideo({ videoId: params.videoId, userId: params.userId });
   } catch (error) {
-    console.error("[error liking video] ==>", error);
-    throw error;
-  }
-};
-
-/**
- * Increment video views
- */
-export const incrementViews: VideoViewIncrementFunction = async (params: VideoViewIncrementParams): Promise<void> => {
-  try {
-    await incrementVideoViews({ videoId: params.videoId });
-  } catch (error) {
-    console.error("[error incrementing views] ==>", error);
+    console.error("error liking video =>", error);
     throw error;
   }
 };

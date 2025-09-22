@@ -4,7 +4,7 @@ import React from 'react';
 import { SignupForm, type SignupFormProps } from '@/components/signup-form';
 import { FocusAwareStatusBar } from '@/components/ui/focus-aware-status-bar';
 import { useSession } from '@/context';
-import { showMessage } from "react-native-flash-message";
+import { notify } from '@/utils/notify';
 
 export default function Signup() {
   const router = useRouter();
@@ -12,29 +12,15 @@ export default function Signup() {
 
   const onSubmit: SignupFormProps['onSubmit'] = async (data) => {
     try {
-      console.log('Signup data:', data);
       const user = await signUp({ email: data.email, password: data.password, name: data.name });
       
       if (user) {
-        console.log('User created successfully, showing success message...');
-        showMessage({
-          message: "Success",
-          description: "Account created successfully!",
-          type: "success",
+        notify.success("Account created successfully!", {
+          onHide: () => router.replace('/(app)'),
         });
-        
-        // Wait for flash message to show before navigating
-        setTimeout(() => {
-          console.log('Navigating to app...');
-          router.replace('/(app)');
-        }, 1500);
       }
     } catch (error) {
-      showMessage({
-        message: "Error",
-        description: "Failed to create account. Please try again.",
-        type: "danger",
-      });
+      notify.error("Failed to create account. Please try again.");
     }
   };
 
@@ -45,25 +31,13 @@ export default function Signup() {
       
       if (user) {
         console.log('Google sign-in successful, showing success message...');
-        showMessage({
-          message: "Success",
-          description: "Signed in with Google successfully!",
-          type: "success",
-        });
-        
-        // Wait for flash message to show before navigating
-        setTimeout(() => {
-          console.log('Navigating to app...');
-          router.replace('/(app)');
-        }, 1500);
+       notify.success("Signed in with Google successfully!", {
+        onHide: () => router.replace('/(app)'),
+       });
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
-      showMessage({
-        message: "Error",
-        description: "Failed to sign in with Google. Please try again.",
-        type: "danger",
-      });
+     notify.error("Failed to sign in with Google. Please try again.");
     }
   };
 
