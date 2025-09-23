@@ -140,7 +140,7 @@ export default function Add() {
         return;
       }
       
-      setRecording(true);
+    setRecording(true);
       const video = await ref.current.recordAsync();
       
       if (video && typeof video === 'object' && 'uri' in video) {
@@ -333,7 +333,7 @@ export default function Add() {
               <View
                 className="border-5 border-white w-20 h-20 rounded-full items-center justify-center"
                 style={{
-                  opacity: pressed ? 0.5 : 1,
+                    opacity: pressed ? 0.5 : 1,
                   backgroundColor: recording ? "rgba(255,0,0,0.3)" : "transparent",
                 }}
               >

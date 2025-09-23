@@ -69,10 +69,10 @@ Performance is crucial for video apps, and this project implements several advan
 ### Installation
 
 1. **Clone the repository**
-   ```bash
+```bash
    git clone <repository-url>
    cd vidtok
-   ```
+```
 
 2. **Install dependencies**
    ```bash
@@ -85,8 +85,8 @@ Performance is crucial for video apps, and this project implements several advan
    - Set up Firebase project with Firestore rules
 
 4. **Run the development server**
-   ```bash
-   npm run dev
+```bash
+    npm run dev
    ```
 
 5. **Open the app**

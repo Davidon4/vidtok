@@ -81,44 +81,44 @@ export function useSession(): SessionContextType {
 export function SessionProvider(props: { children: React.ReactNode }) {
 
 
-// ============================================================================
-// State & Hooks
-// ============================================================================
+  // ============================================================================
+  // State & Hooks
+  // ============================================================================
 
-/**
-* Current authenticated user state
-*/
-const [user, setUser] = useState<User | null>(null);
+  /**
+   * Current authenticated user state
+   */
+  const [user, setUser] = useState<User | null>(null);
 
-/**
-* Loading state for authentication operations
-*/
-const [isLoading, setIsLoading] = useState(true);
+  /**
+   * Loading state for authentication operations
+   */
+  const [isLoading, setIsLoading] = useState(true);
 
-// ============================================================================
-// Effects
-// ============================================================================
+  // ============================================================================
+  // Effects
+  // ============================================================================
 
-/**
-* Automatically updates user state on auth changes
-*/
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-  setUser(user);
-  setIsLoading(false);
-});
+  /**
+   * Automatically updates user state on auth changes
+   */
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setIsLoading(false);
+    });
 
-  // Cleanup subscription on unmount
-  return () => unsubscribe();
-}, []);
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
-// ============================================================================
-// Handlers
-// ============================================================================
+  // ============================================================================
+  // Handlers
+  // ============================================================================
 
-/**
-* Handles user sign-in process
-*/
+  /**
+   * Handles user sign-in process
+   */
   const handleSignIn = async (params: SignInParams) => {
     try {
       const response = await login(params.email, params.password);
@@ -129,9 +129,9 @@ useEffect(() => {
     }
   };
 
-/**
-* Handles new user registration process
-*/
+  /**
+   * Handles new user registration process
+   */
   const handleSignUp = async (params: SignUpParams) => {
     try {
       const response = await register(params.email, params.password, params.name);
@@ -142,9 +142,9 @@ useEffect(() => {
     }
   };
 
-/**
+  /**
 * Handles Google sign-in process
-*/
+   */
   const handleGoogleSignIn = async (params?: GoogleSignInParams) => {
     try {
       const response = await signInWithGoogle();

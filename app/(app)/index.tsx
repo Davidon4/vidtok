@@ -48,19 +48,19 @@ const VideoItem = React.memo(({ video, isActive, videoHeight, likeVideo, current
       player.removeListener('statusChange', handlePlayerStatusChange);
     };
   }, [video.id]);
-  
+
   // Auto pause/play when visibility changes
   React.useEffect(() => {
     if (isPlayerReady) {
-      if (isActive) {
-        player.play();
+    if (isActive) {
+      player.play();
       } else if (shouldPreload) {
         // Preload next video
         player.muted = true;
         player.pause();
-      } else {
-        player.pause();
-      }
+    } else {
+      player.pause();
+    }
     }
   }, [isActive, isPlayerReady, player, shouldPreload]);
 
@@ -223,7 +223,7 @@ export default function HomeScreen() {
         <VideoItem 
           video={item} 
           isActive={index === activeIndex && isScreenFocused} 
-          videoHeight={videoHeight}
+          videoHeight={videoHeight} 
           likeVideo={likeVideo}
           currentUserId={user?.uid || null}
           shouldPreload={index === activeIndex + 1}

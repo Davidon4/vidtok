@@ -118,7 +118,7 @@ WebBrowser.maybeCompleteAuthSession();
 export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefined> {
   try {
     // Use the Expo proxy URL that Google accepts
-    const redirectUri = 'https://auth.expo.io/@king_juggernaut-2/vidtok';
+    const redirectUri = 'https://auth.expo.io/@vidtok-project/vidtok';
 
     const request = new AuthSession.AuthRequest({
       clientId: EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
