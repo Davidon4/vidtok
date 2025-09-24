@@ -2,13 +2,9 @@
  * Cloudinary service for video uploads
  */
 
-import Constants from 'expo-constants';
+import { cloudinaryConfig } from "../lib/config";
 
-const {
-  EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME,
-} = Constants.expoConfig?.extra || {};
-
-const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME}`;
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}`;
 
 /**
  * Upload video to Cloudinary
@@ -31,8 +27,8 @@ export const uploadVideoToCloudinary = async (
   try {
     
     // Validate Cloudinary configuration
-    if (!EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME) {
-      throw new Error('Cloudinary cloud name is not configured. Please set EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME in app.json');
+    if (!cloudinaryConfig.cloudName) {
+      throw new Error('Cloudinary cloud name is not configured. Please set EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME in your .env file');
     }
     
     const formData = new FormData();

@@ -15,7 +15,6 @@ import {
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { auth } from './firebase-config';
-import Constants from 'expo-constants';
 import { 
   uploadVideoToCloudinary, 
   getVideoInfo
@@ -37,10 +36,7 @@ import {
   VideoLikeFunction,
   VideoMetadata
 } from '@/types';
-
-const {
-  EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-} = Constants.expoConfig?.extra || {}
+import { googleConfig } from '../lib/config';
 
 /**
  * User response structure from Firebase Authentication
@@ -121,7 +117,7 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
     const redirectUri = 'https://auth.expo.io/@vidtok-project/vidtok';
 
     const request = new AuthSession.AuthRequest({
-      clientId: EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
+      clientId: googleConfig.clientId || '',
       scopes: ['openid', 'profile', 'email'],
       redirectUri,
       responseType: AuthSession.ResponseType.Code,
@@ -137,7 +133,7 @@ export async function signInWithGoogle(): Promise<FirebaseUserResponse | undefin
       
       const tokenResponse = await AuthSession.exchangeCodeAsync(
         {
-          clientId: EXPO_PUBLIC_GOOGLE_CLIENT_ID || '',
+          clientId: googleConfig.clientId || '',
           code: result.params.code,
           redirectUri,
           extraParams: {},
